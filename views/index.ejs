@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Group Chat</title>
+    <link rel="stylesheet" href="/static/normalize.css">
+    <link rel="stylesheet" href="/skeleton.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src='/socket.io/socket.io.js'></script>
+    <script>
+        $(document).ready(function () {
+            // this is the socket connection
+            var socket = io.connect();
+
+            // jquery to prompt user to enter their name when opening the application
+            var add_new_user = prompt('Please enter your name:');
+            console.log(add_new_user);
+
+            // function to make user enter in a name when 2 or more characters
+            // user is disabled if they do not
+            function validate_user(data) {
+                if(data == null || data.length < 1){
+                    $('#send').attr('disabled', 'true');
+                    $('#message').attr('disabled', 'true');
+                    $('#message').attr('placeholder', 'Refresh the page and enter a name to use the group chat, thank you.');
+                    console.log('invalid user');
+                }
+                else{
+                    socket.emit('user', {name: add_new_user});
+                }
+            }
+
+            // using validate_user function with the new user variable
+            validate_user(add_new_user);
+
+            // displays message of user entering the room and messages entered
+            socket.on('displayed_messages', function (data) {
+                var msg = "";
+                for(var sms in data.previous_messages){
+                    sms = data.previous_messages[sms];
+                    if(sms.length > 1){
+                        msg += "<p>" + sms[0] + ": " + sms[1] + "</p>";
+                    }
+                    else{
+                        msg += sms[0];
+                    }
+                }
+
+                $('#message_board').html(msg);
+            })
+
+            // disables the submit button from submitting a form
+            // adds users message to the message board
+            // clears input after a user enters a message
+            $('form').submit(function (data) {
+                data.preventDefault();
+                socket.emit('new_message', {message: $('#message').val(), user: add_new_user});
+                $('#message').val('');
+            })
+        })
+    </script>
+    <style>
+        .disco{
+            color: darkred;
+        }
+        .join{
+            color: #2b542c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h4>Conversation board</h4>
+    <div id="message_board" class="u-full-width"></div>
+    <form>
+        <input type="text" id="message" placeholder="messages go here!" class="u-full-width">
+        <input type="submit" id="send" class="button-primary">
+    </form>
+</div>
+</body>
+</html>
